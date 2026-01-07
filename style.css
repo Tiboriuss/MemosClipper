@@ -1,0 +1,231 @@
+:root {
+  /* Default / Light Theme */
+  --bg-color: #ffffff;
+  --card-bg: #f9fafb;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --success: #10b981;
+  --error: #ef4444;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light):not(.theme-dark) {
+    --bg-color: #111827;
+    --card-bg: #1f2937;
+    --text-main: #f9fafb;
+    --text-muted: #9ca3af;
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --border-color: #374151;
+    --input-bg: #111827;
+    --success: #34d399;
+    --error: #f87171;
+    --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+  }
+}
+
+.theme-light {
+  --bg-color: #ffffff;
+  --card-bg: #f9fafb;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --success: #10b981;
+  --error: #ef4444;
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.theme-dark {
+  --bg-color: #111827;
+  --card-bg: #1f2937;
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --border-color: #374151;
+  --input-bg: #111827;
+  --success: #34d399;
+  --error: #f87171;
+  --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.4;
+  transition: background-color 0.3s, color 0.3s;
+  width: 400px;
+  /* Fixed width for popup */
+}
+
+/* Options Page Reset */
+.options-page {
+  width: auto !important;
+}
+
+.options-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 3rem;
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+/* Popup Container */
+.container {
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.header-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.title-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-icon {
+  font-size: 1.25rem;
+  text-decoration: none;
+  margin-left: 12px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+textarea,
+input[type="text"],
+select {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+textarea {
+  height: 80px;
+  resize: vertical;
+}
+
+#content-template {
+  height: 200px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.visibility-group {
+  flex: 1;
+}
+
+.screenshot-group {
+  flex: 2;
+}
+
+.screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background-color: var(--card-bg);
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.screenshot-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.screenshot-option input {
+  display: none;
+}
+
+.screenshot-option:has(input:checked) {
+  background-color: var(--primary);
+  color: white;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: opacity 0.2s;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#status {
+  text-align: center;
+  font-size: 0.8rem;
+  min-height: 1.2em;
+}

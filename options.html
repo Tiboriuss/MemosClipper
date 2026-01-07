@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MemoClipper Settings</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
+</head>
+
+<body class="options-page">
+  <div class="options-container">
+    <h1>MemoClipper Settings</h1>
+
+    <div class="form-group">
+      <label for="memos-url">Memos Instance URL</label>
+      <input type="url" id="memos-url" placeholder="https://memos.yourdomain.com">
+      <small>Provide your self-hosted Memos base URL (without trailing slash).</small>
+    </div>
+
+    <div class="form-group">
+      <label for="access-token">Access Token</label>
+      <input type="text" id="access-token" placeholder="Your API Access Token">
+      <small>Find this in Settings -> Security -> Access Tokens.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="default-tags">Default Tags</label>
+      <input type="text" id="default-tags" placeholder="#Test #Inbox">
+      <small>Tags separated by spaces (include the # symbol).</small>
+    </div>
+
+    <div class="form-group">
+      <label for="theme-select">Theme Override</label>
+      <select id="theme-select">
+        <option value="auto">Follow Browser (Auto)</option>
+        <option value="light">Always Light</option>
+        <option value="dark">Always Dark</option>
+      </select>
+      <small>Choose your preferred interface style.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="default-visibility">Default Visibility</label>
+      <select id="default-visibility">
+        <option value="PRIVATE">Private</option>
+        <option value="PROTECTED">Protected (Logged in only)</option>
+        <option value="PUBLIC">Public</option>
+      </select>
+      <small>Default visibility for new memos.</small>
+    </div>
+
+    <div class="form-group">
+      <label for="content-template">Content Template</label>
+      <textarea id="content-template" rows="5"
+        placeholder="### {title}&#10;{selection}&#10;&#10;Source: {url}&#10;{tags}"></textarea>
+      <small>Available placeholders: {title}, {url}, {selection}, {tags}</small>
+    </div>
+
+    <button id="save-btn">Save Configuration</button>
+    <div id="status"></div>
+  </div>
+  <script src="options.js"></script>
+</body>
+
+</html>

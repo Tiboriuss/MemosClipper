@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>MemoClipper</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="theme.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div id="tab-title" class="title-text">New Memo</div>
+            <a href="#" id="open-settings" title="Settings" class="settings-icon">⚙️</a>
+        </header>
+
+        <div class="form-group memo-input-group">
+            <textarea id="comment" placeholder="Add comments or #tags here..."></textarea>
+        </div>
+
+        <div class="row settings-row">
+            <div class="form-group visibility-group">
+                <label>Visibility</label>
+                <select id="visibility-select">
+                    <option value="PRIVATE">Private</option>
+                    <option value="PROTECTED">Protected</option>
+                    <option value="PUBLIC">Public</option>
+                </select>
+            </div>
+            <div class="form-group screenshot-group">
+                <label>Screenshot</label>
+                <div class="screenshot-grid">
+                    <label class="screenshot-option">
+                        <input type="radio" name="screenshot-type" value="none" checked>
+                        <span>None</span>
+                    </label>
+                    <label class="screenshot-option">
+                        <input type="radio" name="screenshot-type" value="full">
+                        <span>Full</span>
+                    </label>
+                    <label class="screenshot-option">
+                        <input type="radio" name="screenshot-type" value="area">
+                        <span>Area</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button id="send-btn">Send to Memos</button>
+        <div id="status"></div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
