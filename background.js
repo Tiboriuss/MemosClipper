@@ -11,6 +11,12 @@ chrome.runtime.onInstalled.addListener(() => {
         title: "Clip Selection to Memos",
         contexts: ["selection"]
     });
+
+    chrome.contextMenus.create({
+        id: "clip-image",
+        title: "Clip Image to Memos",
+        contexts: ["image"]
+    });
 });
 
 // Helper for Toast
@@ -33,7 +39,7 @@ async function showToast(tabId, message, isError = false) {
     }
 }
 
-async function uploadAttachment(memosUrl, token, memoName, base64Content) {
+async function uploadAttachment(memosUrl, token, memoName, base64Content, filename = 'screenshot.png', contentType = 'image/png') {
     const response = await fetch(`${memosUrl}/api/v1/attachments`, {
         method: 'POST',
         headers: {
@@ -41,13 +47,144 @@ async function uploadAttachment(memosUrl, token, memoName, base64Content) {
             'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-            filename: 'screenshot.png',
+            filename: filename,
             content: base64Content,
-            type: 'image/png',
+            type: contentType,
             memo: memoName
         })
     });
     return response.ok;
+}
+
+function buildMemoContent(template, tab, selectionText, tags) {
+    return template
+        .replace(/{title}/g, tab?.title || "")
+        .replace(/{url}/g, tab?.url || "")
+        .replace(/{selection}/g, selectionText || "")
+        .replace(/{tags}/g, tags || "")
+        .trim();
+}
+
+async function createMemo(memosUrl, accessToken, content, visibility) {
+    return fetch(`${memosUrl}/api/v1/memos`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+            content,
+            visibility: visibility || "PRIVATE"
+        })
+    });
+}
+
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+    let binary = '';
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode(...chunk);
+    }
+
+    return btoa(binary);
+}
+
+function inferExtensionFromType(contentType) {
+    const map = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'image/svg+xml': 'svg',
+        'image/bmp': 'bmp',
+        'image/avif': 'avif'
+    };
+
+    return map[contentType?.toLowerCase()] || 'png';
+}
+
+function buildImageFilename(srcUrl, contentType) {
+    try {
+        const parsed = new URL(srcUrl);
+        const rawName = parsed.pathname.split('/').pop();
+        const cleanName = rawName ? rawName.split('?')[0] : '';
+
+        if (cleanName && /\.[a-zA-Z0-9]{2,5}$/.test(cleanName)) {
+            return cleanName;
+        }
+    } catch (_) {
+        // Ignore URL parse issues and fall back to generated name.
+    }
+
+    return `clipped-image.${inferExtensionFromType(contentType)}`;
+}
+
+async function imageUrlToAttachmentPayload(srcUrl) {
+    const response = await fetch(srcUrl);
+
+    if (!response.ok) {
+        throw new Error(`Image fetch failed (${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const contentType = blob.type || response.headers.get('content-type') || 'image/png';
+    const buffer = await blob.arrayBuffer();
+
+    return {
+        base64Content: arrayBufferToBase64(buffer),
+        contentType,
+        filename: buildImageFilename(srcUrl, contentType)
+    };
+}
+
+async function handleImageContextMenu(info, tab, settings) {
+    if (!info.srcUrl) {
+        showToast(tab.id, "No image source found", true);
+        return;
+    }
+
+    const template = settings.template || "### {title}\n{selection}\n\nSource: {url}\n{tags}";
+    const content = buildMemoContent(template, tab, "", settings.defaultTags || "");
+
+    try {
+        const imagePayload = await imageUrlToAttachmentPayload(info.srcUrl);
+
+        const memoResponse = await createMemo(
+            settings.memosUrl,
+            settings.accessToken,
+            content,
+            settings.visibility
+        );
+
+        if (!memoResponse.ok) {
+            showToast(tab.id, "Failed to save memo", true);
+            return;
+        }
+
+        const createdMemo = await memoResponse.json();
+        const uploaded = await uploadAttachment(
+            settings.memosUrl,
+            settings.accessToken,
+            createdMemo.name,
+            imagePayload.base64Content,
+            imagePayload.filename,
+            imagePayload.contentType
+        );
+
+        if (!uploaded) {
+            showToast(tab.id, "Image upload failed", true);
+            return;
+        }
+
+        showToast(tab.id, "Image memo saved!");
+    } catch (error) {
+        console.error(error);
+        showToast(tab.id, "Could not fetch image bytes from this site", true);
+    }
 }
 
 // Handle context menu clicks
@@ -58,26 +195,16 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         return;
     }
 
+    if (info.menuItemId === 'clip-image') {
+        await handleImageContextMenu(info, tab, settings);
+        return;
+    }
+
     const template = settings.template || "### {title}\n{selection}\n\nSource: {url}\n{tags}";
-    const content = template
-        .replace(/{title}/g, tab.title)
-        .replace(/{url}/g, tab.url)
-        .replace(/{selection}/g, info.selectionText || "")
-        .replace(/{tags}/g, settings.defaultTags || "")
-        .trim();
+    const content = buildMemoContent(template, tab, info.selectionText || "", settings.defaultTags || "");
 
     try {
-        const response = await fetch(`${settings.memosUrl}/api/v1/memos`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${settings.accessToken}`
-            },
-            body: JSON.stringify({
-                content: content,
-                visibility: settings.visibility || "PRIVATE"
-            })
-        });
+        const response = await createMemo(settings.memosUrl, settings.accessToken, content, settings.visibility);
 
         if (response.ok) {
             showToast(tab.id, "Memo saved!");

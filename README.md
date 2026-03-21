@@ -7,6 +7,7 @@ Designed to work seamlessly with the latest versions of Memos.
 ## Features
 
 *   **Quick Clipping**: Save current page details or selected text instantly.
+*   **Right-Click Image Clipping**: Send images directly to Memos from the page context menu as real attachments.
 *   **Screenshots**: Attach full-page or partial-area screenshots to your memos. 
 *   **Custom Templates**: Define exactly how you want your notes to look with a flexible template system.
 *   **Privacy Control**: Set default visibility (Public, Protected, Private) or change it on the fly.
@@ -44,8 +45,11 @@ Before you start clipping, you need to connect the extension to your Memos serve
 
 1.  **Clip a Page**: Click the MemoClipper icon. The title and URL are automatically ready to be saved.
 2.  **Clip Text**: Select text on a webpage -> Right Click -> "MemoClipper" context menu (or just open the popup to see it pre-filled if configured).
-3.  **Add Screenshots**: Choose "Full" or "Area" in the popup to capture visual context.
-4.  **Send**: Hit "Send to Memos" and you're done.
+3.  **Clip an Image**: Right-click an image -> **Clip Image to Memos** to upload the original image bytes as an attachment.
+4.  **Add Screenshots**: Choose "Full" or "Area" in the popup to capture visual context.
+5.  **Send**: Hit "Send to Memos" and you're done.
+
+Note: Some websites block direct image fetching (hotlink/auth protections). In those cases, image clipping can fail and you should use screenshot mode instead.
 
 ![Extension Popup Screenshot](./screenshots/popup.png)
 
