@@ -1,22 +1,63 @@
+const PAGE_URL_PATTERNS = ["http://*/*", "https://*/*"];
+
 // Register context menus on installation
 chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
         id: "clip-page",
         title: "Clip Page to Memos",
-        contexts: ["page"]
+        contexts: ["page"],
+        documentUrlPatterns: PAGE_URL_PATTERNS
     });
 
     chrome.contextMenus.create({
         id: "clip-selection",
         title: "Clip Selection to Memos",
-        contexts: ["selection"]
+        contexts: ["selection"],
+        documentUrlPatterns: PAGE_URL_PATTERNS
     });
 
     chrome.contextMenus.create({
         id: "clip-image",
         title: "Clip Image to Memos",
-        contexts: ["image"]
+        contexts: ["image"],
+        documentUrlPatterns: PAGE_URL_PATTERNS
     });
+
+    chrome.contextMenus.create({
+        id: "clip-link",
+        title: "Clip Link to Memos",
+        contexts: ["link"],
+        documentUrlPatterns: PAGE_URL_PATTERNS
+    });
+    }); // end removeAll callback
+});
+
+const MENU_ITEM_IDS = ["clip-page", "clip-selection", "clip-image", "clip-link"];
+
+function setMenuVisibility(visible) {
+    for (const id of MENU_ITEM_IDS) {
+        chrome.contextMenus.update(id, { visible });
+    }
+}
+
+function isWebUrl(url) {
+    return !!(url && (url.startsWith('http://') || url.startsWith('https://')));
+}
+
+// Hide items on non-web tabs (chrome://, new tab, etc.) so they don't appear
+// in the extension icon right-click menu. Show them on real web pages.
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+    chrome.tabs.get(tabId, (tab) => {
+        if (chrome.runtime.lastError) return;
+        setMenuVisibility(isWebUrl(tab?.url));
+    });
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.url !== undefined && tab.active) {
+        setMenuVisibility(isWebUrl(changeInfo.url));
+    }
 });
 
 // Helper for Toast
@@ -141,6 +182,61 @@ async function imageUrlToAttachmentPayload(srcUrl) {
     };
 }
 
+async function getLinkTextFromPage(tabId, linkUrl) {
+    try {
+        const results = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (href) => {
+                try {
+                    const target = new URL(href).href;
+                    for (const a of document.querySelectorAll('a')) {
+                        try {
+                            if (new URL(a.href).href === target) {
+                                return a.textContent.trim() || null;
+                            }
+                        } catch (_) {}
+                    }
+                } catch (_) {}
+                return null;
+            },
+            args: [linkUrl]
+        });
+        return results[0]?.result || null;
+    } catch (_) {
+        return null;
+    }
+}
+
+async function handleLinkContextMenu(info, tab, settings) {
+    if (!info.linkUrl) {
+        showToast(tab.id, "No link URL found", true);
+        return;
+    }
+
+    const template = settings.template || "### {title}\n{selection}\n\nSource: {url}\n{tags}";
+    // Prefer DOM-scraped anchor text; fall back to info.linkText then the raw URL.
+    const scraped = await getLinkTextFromPage(tab.id, info.linkUrl);
+    const linkText = scraped || info.linkText || info.linkUrl;
+    const content = template
+        .replace(/{title}/g, tab?.title || "")
+        .replace(/{url}/g, info.linkUrl)
+        .replace(/{selection}/g, linkText)
+        .replace(/{tags}/g, settings.defaultTags || "")
+        .trim();
+
+    try {
+        const response = await createMemo(settings.memosUrl, settings.accessToken, content, settings.visibility);
+
+        if (response.ok) {
+            showToast(tab.id, "Link memo saved!");
+        } else {
+            showToast(tab.id, "Failed to save memo", true);
+        }
+    } catch (error) {
+        showToast(tab.id, "Network error", true);
+    }
+}
+
 async function handleImageContextMenu(info, tab, settings) {
     if (!info.srcUrl) {
         showToast(tab.id, "No image source found", true);
@@ -189,6 +285,11 @@ async function handleImageContextMenu(info, tab, settings) {
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    // Ignore clicks from the extension icon right-click menu (no valid page tab)
+    if (!tab?.url || !(tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
+        return;
+    }
+
     const settings = await chrome.storage.sync.get(['memosUrl', 'accessToken', 'defaultTags', 'template', 'visibility']);
 
     if (!settings.memosUrl || !settings.accessToken) {
@@ -197,6 +298,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     if (info.menuItemId === 'clip-image') {
         await handleImageContextMenu(info, tab, settings);
+        return;
+    }
+
+    if (info.menuItemId === 'clip-link') {
+        await handleLinkContextMenu(info, tab, settings);
         return;
     }
 
